@@ -1,0 +1,796 @@
+<!doctype html><html lang=en-us dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="BP神经网络（Backpropagation Neural network），具有多层神经元，并且神经元的信号（输入输出）总是向前（由输入层指向输出层）传播，所以是多层向前网络。 # BP神经网络的结构 设BP神经网络有m层。第一层是输入层，最后一层（第m层）是输出层，中间各层称为隐层。 除了输出层以外，每一层都可以加上一个偏置节点（又称偏置单元，如图标注“+1”的圆圈）。偏置单元没有输入（没有其他神经元指向它），它的输出总是1。（相当于把外部输入“+1”看作是某个神经元的输出）。 因为偏置节点与神经元存在差异，所以一般把神经元和偏置节点统称为节点。 直觉上，偏置节点可以对下一层的神经元产生直接影响，而其他神经元因为经过了层层传递，对下一层的影响相对间接。 偏置单元并不是必需的，但它可以为每个隐藏层和输出层中的神经元提供一个可学习的常数偏移量，这个偏移量允许神经网络更好地拟合数据集并提高模型的表达能力。 并且偏置单元允许神经网络在输入为零时仍能有输出，在没有偏置单元的情况下，即使输入不为零，如果加权求和结果为零，那么神经元的输出也将为零（陷入得不到非零的有效输出，神经元无法激活的状况）。通过引入偏置项，即使输入为零，神经元也有可能激活，从而提高了网络的表达能力。 # BP神经网络的输入输出关系 BP神经网络中，输入层作为数据的缓冲，不对数据做任何处理。也就是说，输入的数据直接作为输入层神经元的输出，则： $$ y_i^1=x_i\\quad(i=1,2,\\cdots,p_1)\\ $$ 隐层和输出层的神经元，需要把神经元的输入作为参数，传递给激活函数，得到的结果作为神经元的输出。实际需要解决的问题都有着复杂的非线性特征，所以激活函数都选择非线性函数。 隐层$k$与输出层各个神经元的非线性输入输出关系记为$f_k(k=2,\\cdots,m)$，由$k-1$层的第$j$个神经元到$k$层的第$i$个神经元的连接权值记为$w_{ij}^k$，第$k$层中第$i$个神经元的输入总和记为$u_i^k$,输出为$y_i^k$，则有： $$ y^k_i=f_k(u_i^k)\\ u_i^k=\\sum_jw_{ij}^{k}y_j^{k-1}\\quad(k=2,\\cdots,m) $$ 当从输入层输入数据$X=[x_1,x_2,\\cdots,x_{p_1}]^T$（设第n层有$p_n$个神经元，则输入层有$p_1$个神经元），得到输出层的输出为$Y=[y_1,y_2,\\cdots,y_{p_m}]^T$（输出层有$p_m$个神经元）。 计算机科学中，常用$[x_1,x_2,\\cdots,x_{p_1}]$的形式表示一组序列，称为行向量（即水平方向的列表或者一维数组，向量是只有一个维度的矩阵）。而$T$代表线性代数中的矩阵转置操作，所以$[x_1,x_2,\\cdots,x_{p_1}]^T$代表一个列向量，其中的元素从上往下排列，与BP神经网络结构图中，纵向画出的神经元一一对应。 例如输入层第$n$个节点的输入是$x_n$，输出层第$n$个节点的输出是$y_n$。 因此，可以把BP神经网络看成是一个从输入到输出的非线性映射，从$p_1$个输入映射成$p_m$个输出。 # BP定理 给定任意$\\varepsilon$>0，对于任意的连续函数$f$，存在一个三层前向神经网络，可以在任意$\\varepsilon$平方误差精度内逼近$f$。 也就是说，只需要三层BP神经网络，就可以逼近任意一个连续的非线性函数，但是可能需要大量的隐层神经元个数，或者给BP神经网络添加更多的隐层数量。 如何最有效地确定BP神经网络的结构尚无定论，但通常默认，输入层的神经元个数，与样本的特征数一致，使每一个输入层神经元对应一种特征。输入层的神经元个数，与样本的类别数一致，使每一个输出层神经元对应一种分类。 # BP神经网络的运作过程 初始化网络，确定各层的节点数量，然后设置初始权值。 将数据归一化，然后从输入层输入训练数据集（包含输入与期望输出），开始学习。 前向（正向）传播：从输入层开始，逐层计算神经元的输入与输出，直到得出输出层的输出为止。 反向传播（学习）：根据实际输出与期望输出，先计算输出层的总误差（损失函数）和输出层神经元的误差信号，然后逆向逐层计算所有神经元的误差信号和权值修正量，直到更新完所有神经元的误差信号和权值。 重复前向传播和反向传播，直到损失函数或者输出层神经元的误差信号足够小（与给出的容差进行对比），或者达到固定的学习次数（每一次学习意味着先后进行一次前向传播和反向传播），就停止学习。同时使用这两个判断条件，可以有效避免欠拟合与过拟合的情况。 学习完成后，输入测试数据集，得到输出结果，将其映射为样本的具体类型。 # 权值初始化 在BP神经网络中，权值初始化是一个非常重要的步骤，它可以影响网络的收敛速度和性能。 常用的初始化方法如下： 随机初始化 $$ w_{ij}^k=random(-a,a) $$ 所有权值表现为(-a,a)上的随机分布。 Xavier初始化 略 # 损失函数 损失函数，又称为代价函数，误差函数，在机器学习和统计建模中用于度量模型预测值与真实值之间的差异或损失程度，在BP神经网络中，表示输出层的实际输出与期望输出之间的总误差。 常用的损失函数$J$如下： 均方误差 $$ J=\\frac{1}{p_m}\\sum_{j=1}^{p_m}(y_j^m-\\hat{y_i})^2 $$ 计算所有输出层神经元的输出与期望输出之间的差的平方和，最后求平均。 由于最后不求平均也能反映误差水平，所以为了求导计算结果的美观，这里选择将其乘以$\\frac{1}{2}$，得到 $$ J=\\frac{1}{2}\\sum_{j=1}^{p_m}(y_j^m-\\hat{y_i})^2 $$ 下面将使用该式作为误差函数。 平均绝对误差 $$ J=\\frac{1}{p_m}\\sum_{i=1}^n\\lvert y_i^{p_m}-\\hat{y_i}\\rvert $$ # 梯度下降法 BP算法的目标就是要通过反向学习，改变权值，使输出层的输出结果越来越接近期望输出。这个问题等价于，求误差函数的极小值，约束条件是上述的输入输出关系。"><title>BP神经网络与反向传播算法</title>
+<link rel=canonical href=https://CHmadoka.github.io/p/bp%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%8E%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%E7%AE%97%E6%B3%95/><link rel=stylesheet href=/scss/style.min.8e60baf4cd3fc55968717a6e39762f4d28ed7ef6007566b6c7970ad0fe907198.css><meta property='og:title' content="BP神经网络与反向传播算法"><meta property='og:description' content="BP神经网络（Backpropagation Neural network），具有多层神经元，并且神经元的信号（输入输出）总是向前（由输入层指向输出层）传播，所以是多层向前网络。 # BP神经网络的结构 设BP神经网络有m层。第一层是输入层，最后一层（第m层）是输出层，中间各层称为隐层。 除了输出层以外，每一层都可以加上一个偏置节点（又称偏置单元，如图标注“+1”的圆圈）。偏置单元没有输入（没有其他神经元指向它），它的输出总是1。（相当于把外部输入“+1”看作是某个神经元的输出）。 因为偏置节点与神经元存在差异，所以一般把神经元和偏置节点统称为节点。 直觉上，偏置节点可以对下一层的神经元产生直接影响，而其他神经元因为经过了层层传递，对下一层的影响相对间接。 偏置单元并不是必需的，但它可以为每个隐藏层和输出层中的神经元提供一个可学习的常数偏移量，这个偏移量允许神经网络更好地拟合数据集并提高模型的表达能力。 并且偏置单元允许神经网络在输入为零时仍能有输出，在没有偏置单元的情况下，即使输入不为零，如果加权求和结果为零，那么神经元的输出也将为零（陷入得不到非零的有效输出，神经元无法激活的状况）。通过引入偏置项，即使输入为零，神经元也有可能激活，从而提高了网络的表达能力。 # BP神经网络的输入输出关系 BP神经网络中，输入层作为数据的缓冲，不对数据做任何处理。也就是说，输入的数据直接作为输入层神经元的输出，则： $$ y_i^1=x_i\\quad(i=1,2,\\cdots,p_1)\\ $$ 隐层和输出层的神经元，需要把神经元的输入作为参数，传递给激活函数，得到的结果作为神经元的输出。实际需要解决的问题都有着复杂的非线性特征，所以激活函数都选择非线性函数。 隐层$k$与输出层各个神经元的非线性输入输出关系记为$f_k(k=2,\\cdots,m)$，由$k-1$层的第$j$个神经元到$k$层的第$i$个神经元的连接权值记为$w_{ij}^k$，第$k$层中第$i$个神经元的输入总和记为$u_i^k$,输出为$y_i^k$，则有： $$ y^k_i=f_k(u_i^k)\\ u_i^k=\\sum_jw_{ij}^{k}y_j^{k-1}\\quad(k=2,\\cdots,m) $$ 当从输入层输入数据$X=[x_1,x_2,\\cdots,x_{p_1}]^T$（设第n层有$p_n$个神经元，则输入层有$p_1$个神经元），得到输出层的输出为$Y=[y_1,y_2,\\cdots,y_{p_m}]^T$（输出层有$p_m$个神经元）。 计算机科学中，常用$[x_1,x_2,\\cdots,x_{p_1}]$的形式表示一组序列，称为行向量（即水平方向的列表或者一维数组，向量是只有一个维度的矩阵）。而$T$代表线性代数中的矩阵转置操作，所以$[x_1,x_2,\\cdots,x_{p_1}]^T$代表一个列向量，其中的元素从上往下排列，与BP神经网络结构图中，纵向画出的神经元一一对应。 例如输入层第$n$个节点的输入是$x_n$，输出层第$n$个节点的输出是$y_n$。 因此，可以把BP神经网络看成是一个从输入到输出的非线性映射，从$p_1$个输入映射成$p_m$个输出。 # BP定理 给定任意$\\varepsilon$>0，对于任意的连续函数$f$，存在一个三层前向神经网络，可以在任意$\\varepsilon$平方误差精度内逼近$f$。 也就是说，只需要三层BP神经网络，就可以逼近任意一个连续的非线性函数，但是可能需要大量的隐层神经元个数，或者给BP神经网络添加更多的隐层数量。 如何最有效地确定BP神经网络的结构尚无定论，但通常默认，输入层的神经元个数，与样本的特征数一致，使每一个输入层神经元对应一种特征。输入层的神经元个数，与样本的类别数一致，使每一个输出层神经元对应一种分类。 # BP神经网络的运作过程 初始化网络，确定各层的节点数量，然后设置初始权值。 将数据归一化，然后从输入层输入训练数据集（包含输入与期望输出），开始学习。 前向（正向）传播：从输入层开始，逐层计算神经元的输入与输出，直到得出输出层的输出为止。 反向传播（学习）：根据实际输出与期望输出，先计算输出层的总误差（损失函数）和输出层神经元的误差信号，然后逆向逐层计算所有神经元的误差信号和权值修正量，直到更新完所有神经元的误差信号和权值。 重复前向传播和反向传播，直到损失函数或者输出层神经元的误差信号足够小（与给出的容差进行对比），或者达到固定的学习次数（每一次学习意味着先后进行一次前向传播和反向传播），就停止学习。同时使用这两个判断条件，可以有效避免欠拟合与过拟合的情况。 学习完成后，输入测试数据集，得到输出结果，将其映射为样本的具体类型。 # 权值初始化 在BP神经网络中，权值初始化是一个非常重要的步骤，它可以影响网络的收敛速度和性能。 常用的初始化方法如下： 随机初始化 $$ w_{ij}^k=random(-a,a) $$ 所有权值表现为(-a,a)上的随机分布。 Xavier初始化 略 # 损失函数 损失函数，又称为代价函数，误差函数，在机器学习和统计建模中用于度量模型预测值与真实值之间的差异或损失程度，在BP神经网络中，表示输出层的实际输出与期望输出之间的总误差。 常用的损失函数$J$如下： 均方误差 $$ J=\\frac{1}{p_m}\\sum_{j=1}^{p_m}(y_j^m-\\hat{y_i})^2 $$ 计算所有输出层神经元的输出与期望输出之间的差的平方和，最后求平均。 由于最后不求平均也能反映误差水平，所以为了求导计算结果的美观，这里选择将其乘以$\\frac{1}{2}$，得到 $$ J=\\frac{1}{2}\\sum_{j=1}^{p_m}(y_j^m-\\hat{y_i})^2 $$ 下面将使用该式作为误差函数。 平均绝对误差 $$ J=\\frac{1}{p_m}\\sum_{i=1}^n\\lvert y_i^{p_m}-\\hat{y_i}\\rvert $$ # 梯度下降法 BP算法的目标就是要通过反向学习，改变权值，使输出层的输出结果越来越接近期望输出。这个问题等价于，求误差函数的极小值，约束条件是上述的输入输出关系。"><meta property='og:url' content='https://CHmadoka.github.io/p/bp%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%8E%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%E7%AE%97%E6%B3%95/'><meta property='og:site_name' content='CHmadoka 小屋'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='神经网络'><meta property='article:tag' content='BP神经网络'><meta property='article:published_time' content='2024-04-09T00:00:00+00:00'><meta property='article:modified_time' content='2024-04-09T00:00:00+00:00'><meta property='og:image' content='https://CHmadoka.github.io/p/bp%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%8E%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%E7%AE%97%E6%B3%95/1.png'><meta name=twitter:title content="BP神经网络与反向传播算法"><meta name=twitter:description content="BP神经网络（Backpropagation Neural network），具有多层神经元，并且神经元的信号（输入输出）总是向前（由输入层指向输出层）传播，所以是多层向前网络。 # BP神经网络的结构 设BP神经网络有m层。第一层是输入层，最后一层（第m层）是输出层，中间各层称为隐层。 除了输出层以外，每一层都可以加上一个偏置节点（又称偏置单元，如图标注“+1”的圆圈）。偏置单元没有输入（没有其他神经元指向它），它的输出总是1。（相当于把外部输入“+1”看作是某个神经元的输出）。 因为偏置节点与神经元存在差异，所以一般把神经元和偏置节点统称为节点。 直觉上，偏置节点可以对下一层的神经元产生直接影响，而其他神经元因为经过了层层传递，对下一层的影响相对间接。 偏置单元并不是必需的，但它可以为每个隐藏层和输出层中的神经元提供一个可学习的常数偏移量，这个偏移量允许神经网络更好地拟合数据集并提高模型的表达能力。 并且偏置单元允许神经网络在输入为零时仍能有输出，在没有偏置单元的情况下，即使输入不为零，如果加权求和结果为零，那么神经元的输出也将为零（陷入得不到非零的有效输出，神经元无法激活的状况）。通过引入偏置项，即使输入为零，神经元也有可能激活，从而提高了网络的表达能力。 # BP神经网络的输入输出关系 BP神经网络中，输入层作为数据的缓冲，不对数据做任何处理。也就是说，输入的数据直接作为输入层神经元的输出，则： $$ y_i^1=x_i\\quad(i=1,2,\\cdots,p_1)\\ $$ 隐层和输出层的神经元，需要把神经元的输入作为参数，传递给激活函数，得到的结果作为神经元的输出。实际需要解决的问题都有着复杂的非线性特征，所以激活函数都选择非线性函数。 隐层$k$与输出层各个神经元的非线性输入输出关系记为$f_k(k=2,\\cdots,m)$，由$k-1$层的第$j$个神经元到$k$层的第$i$个神经元的连接权值记为$w_{ij}^k$，第$k$层中第$i$个神经元的输入总和记为$u_i^k$,输出为$y_i^k$，则有： $$ y^k_i=f_k(u_i^k)\\ u_i^k=\\sum_jw_{ij}^{k}y_j^{k-1}\\quad(k=2,\\cdots,m) $$ 当从输入层输入数据$X=[x_1,x_2,\\cdots,x_{p_1}]^T$（设第n层有$p_n$个神经元，则输入层有$p_1$个神经元），得到输出层的输出为$Y=[y_1,y_2,\\cdots,y_{p_m}]^T$（输出层有$p_m$个神经元）。 计算机科学中，常用$[x_1,x_2,\\cdots,x_{p_1}]$的形式表示一组序列，称为行向量（即水平方向的列表或者一维数组，向量是只有一个维度的矩阵）。而$T$代表线性代数中的矩阵转置操作，所以$[x_1,x_2,\\cdots,x_{p_1}]^T$代表一个列向量，其中的元素从上往下排列，与BP神经网络结构图中，纵向画出的神经元一一对应。 例如输入层第$n$个节点的输入是$x_n$，输出层第$n$个节点的输出是$y_n$。 因此，可以把BP神经网络看成是一个从输入到输出的非线性映射，从$p_1$个输入映射成$p_m$个输出。 # BP定理 给定任意$\\varepsilon$>0，对于任意的连续函数$f$，存在一个三层前向神经网络，可以在任意$\\varepsilon$平方误差精度内逼近$f$。 也就是说，只需要三层BP神经网络，就可以逼近任意一个连续的非线性函数，但是可能需要大量的隐层神经元个数，或者给BP神经网络添加更多的隐层数量。 如何最有效地确定BP神经网络的结构尚无定论，但通常默认，输入层的神经元个数，与样本的特征数一致，使每一个输入层神经元对应一种特征。输入层的神经元个数，与样本的类别数一致，使每一个输出层神经元对应一种分类。 # BP神经网络的运作过程 初始化网络，确定各层的节点数量，然后设置初始权值。 将数据归一化，然后从输入层输入训练数据集（包含输入与期望输出），开始学习。 前向（正向）传播：从输入层开始，逐层计算神经元的输入与输出，直到得出输出层的输出为止。 反向传播（学习）：根据实际输出与期望输出，先计算输出层的总误差（损失函数）和输出层神经元的误差信号，然后逆向逐层计算所有神经元的误差信号和权值修正量，直到更新完所有神经元的误差信号和权值。 重复前向传播和反向传播，直到损失函数或者输出层神经元的误差信号足够小（与给出的容差进行对比），或者达到固定的学习次数（每一次学习意味着先后进行一次前向传播和反向传播），就停止学习。同时使用这两个判断条件，可以有效避免欠拟合与过拟合的情况。 学习完成后，输入测试数据集，得到输出结果，将其映射为样本的具体类型。 # 权值初始化 在BP神经网络中，权值初始化是一个非常重要的步骤，它可以影响网络的收敛速度和性能。 常用的初始化方法如下： 随机初始化 $$ w_{ij}^k=random(-a,a) $$ 所有权值表现为(-a,a)上的随机分布。 Xavier初始化 略 # 损失函数 损失函数，又称为代价函数，误差函数，在机器学习和统计建模中用于度量模型预测值与真实值之间的差异或损失程度，在BP神经网络中，表示输出层的实际输出与期望输出之间的总误差。 常用的损失函数$J$如下： 均方误差 $$ J=\\frac{1}{p_m}\\sum_{j=1}^{p_m}(y_j^m-\\hat{y_i})^2 $$ 计算所有输出层神经元的输出与期望输出之间的差的平方和，最后求平均。 由于最后不求平均也能反映误差水平，所以为了求导计算结果的美观，这里选择将其乘以$\\frac{1}{2}$，得到 $$ J=\\frac{1}{2}\\sum_{j=1}^{p_m}(y_j^m-\\hat{y_i})^2 $$ 下面将使用该式作为误差函数。 平均绝对误差 $$ J=\\frac{1}{p_m}\\sum_{i=1}^n\\lvert y_i^{p_m}-\\hat{y_i}\\rvert $$ # 梯度下降法 BP算法的目标就是要通过反向学习，改变权值，使输出层的输出结果越来越接近期望输出。这个问题等价于，求误差函数的极小值，约束条件是上述的输入输出关系。"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content='https://CHmadoka.github.io/p/bp%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%8E%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%E7%AE%97%E6%B3%95/1.png'><link rel="shortcut icon" href=/titleImg.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/file_259987_hu712dd812b62879d39640ef77b16ac818_50548_300x0_resize_q75_box.jpg width=300 height=300 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>😽</span></figure><div class=site-meta><h1 class=site-name><a href=/>CHmadoka 小屋</a></h1><h2 class=site-description>呆头呆脑的大聪明。在此分享一些比较个人化的内容。</h2></div></header><ol class=menu-social><li><a href=https://github.com/CHmadoka target=_blank title=GitHub rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li><li><a href=https://twitter.com target=_blank title=Twitter rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-twitter" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M22 4.01c-1 .49-1.98.689-3 .99-1.121-1.265-2.783-1.335-4.38-.737S11.977 6.323 12 8v1c-3.245.083-6.135-1.395-8-4 0 0-4.182 7.433 4 11-1.872 1.247-3.739 2.088-6 2 3.308 1.803 6.913 2.423 10.034 1.517 3.58-1.04 6.522-3.723 7.651-7.742a13.84 13.84.0 00.497-3.753C20.18 7.773 21.692 5.25 22 4.009z"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>主页</span></a></li><li><a href=/archives/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>垃圾堆</span></a></li><li><a href=/search/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li><a href=/%E9%93%BE%E6%8E%A5/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M10 14a3.5 3.5.0 005 0l4-4a3.5 3.5.0 00-5-5l-.5.5"/><path d="M14 10a3.5 3.5.0 00-5 0l-4 4a3.5 3.5.0 005 5l.5-.5"/></svg>
+<span>链接</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#bp神经网络的结构>BP神经网络的结构</a></li><li><a href=#bp神经网络的输入输出关系>BP神经网络的输入输出关系</a></li><li><a href=#bp定理>BP定理</a></li><li><a href=#bp神经网络的运作过程>BP神经网络的运作过程</a></li><li><a href=#权值初始化>权值初始化</a></li><li><a href=#损失函数>损失函数</a></li><li><a href=#梯度下降法>梯度下降法</a></li><li><a href=#输入输出的编码>输入输出的编码</a><ol><li><a href=#样本特征的编码>样本特征的编码</a></li><li><a href=#分类的编码>分类的编码</a></li><li><a href=#输出到分类的映射>输出到分类的映射</a></li></ol></li><li><a href=#实例应用与代码>实例应用与代码</a></li></ol></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/bp%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%8E%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%E7%AE%97%E6%B3%95/><img src=/p/bp%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%8E%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%E7%AE%97%E6%B3%95/1_hud271e26b886e24e34b864ebb2b9cf980_50512_800x0_resize_box_3.png srcset="/p/bp%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%8E%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%E7%AE%97%E6%B3%95/1_hud271e26b886e24e34b864ebb2b9cf980_50512_800x0_resize_box_3.png 800w, /p/bp%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%8E%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%E7%AE%97%E6%B3%95/1_hud271e26b886e24e34b864ebb2b9cf980_50512_1600x0_resize_box_3.png 1600w" width=800 height=480 loading=lazy alt="Featured image of post BP神经网络与反向传播算法"></a></div><div class=article-details><header class=article-category><a href=/categories/%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C/>神经网络
+</a><a href=/categories/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD/>人工智能
+</a><a href=/categories/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/>机器学习</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/bp%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%8E%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%E7%AE%97%E6%B3%95/>BP神经网络与反向传播算法</a></h2></div><footer class=article-time><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published>Apr 09, 2024</time></div><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 7 分钟</time></div></footer></div></header><section class=article-content><p>BP神经网络（Backpropagation Neural network），具有多层神经元，并且神经元的信号（输入输出）总是向前（由输入层指向输出层）传播，所以是多层向前网络。</p><h2 id=bp神经网络的结构><a href=#bp%e7%a5%9e%e7%bb%8f%e7%bd%91%e7%bb%9c%e7%9a%84%e7%bb%93%e6%9e%84>#</a>
+BP神经网络的结构</h2><p><img src=/p/bp%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%8E%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%E7%AE%97%E6%B3%95/1.png width=403 height=242 srcset="/p/bp%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%8E%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%E7%AE%97%E6%B3%95/1_hud271e26b886e24e34b864ebb2b9cf980_50512_480x0_resize_box_3.png 480w, /p/bp%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%8E%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%E7%AE%97%E6%B3%95/1_hud271e26b886e24e34b864ebb2b9cf980_50512_1024x0_resize_box_3.png 1024w" loading=lazy alt=BP神经网络的结构 class=gallery-image data-flex-grow=166 data-flex-basis=399px></p><p>设BP神经网络有m层。第一层是输入层，最后一层（第m层）是输出层，中间各层称为隐层。</p><p>除了输出层以外，每一层都可以加上一个偏置节点（又称偏置单元，如图标注“+1”的圆圈）。偏置单元没有输入（没有其他神经元指向它），它的输出总是1。（相当于把外部输入“+1”看作是某个神经元的输出）。</p><p>因为偏置节点与神经元存在差异，所以<strong>一般把神经元和偏置节点统称为节点</strong>。</p><p>直觉上，偏置节点可以对下一层的神经元产生直接影响，而其他神经元因为经过了层层传递，对下一层的影响相对间接。</p><p>偏置单元并不是必需的，但它可以为每个隐藏层和输出层中的神经元提供一个可学习的常数偏移量，这个偏移量允许神经网络更好地拟合数据集并提高模型的表达能力。</p><p>并且偏置单元允许神经网络在输入为零时仍能有输出，在没有偏置单元的情况下，即使输入不为零，如果加权求和结果为零，那么神经元的输出也将为零（陷入得不到非零的有效输出，神经元无法激活的状况）。通过引入偏置项，即使输入为零，神经元也有可能激活，从而提高了网络的表达能力。</p><h2 id=bp神经网络的输入输出关系><a href=#bp%e7%a5%9e%e7%bb%8f%e7%bd%91%e7%bb%9c%e7%9a%84%e8%be%93%e5%85%a5%e8%be%93%e5%87%ba%e5%85%b3%e7%b3%bb>#</a>
+BP神经网络的输入输出关系</h2><p>BP神经网络中，输入层作为数据的缓冲，不对数据做任何处理。也就是说，<strong>输入的数据直接作为输入层神经元的输出</strong>，则：
+$$
+y_i^1=x_i\quad(i=1,2,\cdots,p_1)\
+$$</p><p>隐层和输出层的神经元，需要把神经元的输入作为参数，传递给激活函数，得到的结果作为神经元的输出。实际需要解决的问题都有着复杂的非线性特征，所以激活函数都选择<strong>非线性函数</strong>。</p><p>隐层$k$与输出层各个神经元的非线性输入输出关系记为$f_k(k=2,\cdots,m)$，由$k-1$层的第$j$个神经元到$k$层的第$i$个神经元的连接权值记为$w_{ij}^k$，第$k$层中第$i$个神经元的输入总和记为$u_i^k$,输出为$y_i^k$，则有：
+$$
+y^k_i=f_k(u_i^k)\
+u_i^k=\sum_jw_{ij}^{k}y_j^{k-1}\quad(k=2,\cdots,m)
+$$
+当从输入层输入数据$X=[x_1,x_2,\cdots,x_{p_1}]^T$（设第n层有$p_n$个神经元，则输入层有$p_1$个神经元），得到输出层的输出为$Y=[y_1,y_2,\cdots,y_{p_m}]^T$（输出层有$p_m$个神经元）。</p><p>计算机科学中，常用$[x_1,x_2,\cdots,x_{p_1}]$的形式表示一组序列，称为行向量（即水平方向的列表或者一维数组，向量是只有一个维度的矩阵）。而$T$代表线性代数中的矩阵转置操作，所以$[x_1,x_2,\cdots,x_{p_1}]^T$代表一个列向量，其中的元素从上往下排列，与BP神经网络结构图中，纵向画出的神经元一一对应。</p><p>例如输入层第$n$个节点的输入是$x_n$，输出层第$n$个节点的输出是$y_n$。</p><p>因此，可以把BP神经网络看成是一个从输入到输出的非线性映射，从$p_1$个输入映射成$p_m$个输出。</p><h2 id=bp定理><a href=#bp%e5%ae%9a%e7%90%86>#</a>
+BP定理</h2><blockquote><p>给定任意$\varepsilon$>0，对于任意的连续函数$f$，存在一个三层前向神经网络，可以在任意$\varepsilon$平方误差精度内逼近$f$。</p></blockquote><p>也就是说，只需要三层BP神经网络，就可以逼近任意一个连续的非线性函数，但是可能需要大量的隐层神经元个数，或者给BP神经网络添加更多的隐层数量。</p><p>如何最有效地确定BP神经网络的结构尚无定论，但通常默认，输入层的神经元个数，与样本的特征数一致，使每一个输入层神经元对应一种特征。输入层的神经元个数，与样本的类别数一致，使每一个输出层神经元对应一种分类。</p><h2 id=bp神经网络的运作过程><a href=#bp%e7%a5%9e%e7%bb%8f%e7%bd%91%e7%bb%9c%e7%9a%84%e8%bf%90%e4%bd%9c%e8%bf%87%e7%a8%8b>#</a>
+BP神经网络的运作过程</h2><p><img src=/p/bp%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%8E%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%E7%AE%97%E6%B3%95/2.png width=571 height=915 srcset="/p/bp%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%8E%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%E7%AE%97%E6%B3%95/2_hucccb64f74af914f05be822133a399aeb_26870_480x0_resize_box_3.png 480w, /p/bp%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%8E%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%E7%AE%97%E6%B3%95/2_hucccb64f74af914f05be822133a399aeb_26870_1024x0_resize_box_3.png 1024w" loading=lazy class=gallery-image data-flex-grow=62 data-flex-basis=149px></p><ol><li>初始化网络，确定各层的节点数量，然后<strong>设置初始权值</strong>。</li><li>将数据归一化，然后从输入层输入<strong>训练数据集（包含输入与期望输出）</strong>，开始学习。</li><li><strong>前向（正向）传播</strong>：从输入层开始，逐层计算神经元的输入与输出，直到得出输出层的输出为止。</li><li><strong>反向传播</strong>（学习）：根据实际输出与期望输出，先计算输出层的总误差（<strong>损失函数</strong>）和输出层神经元的<strong>误差信号</strong>，然后逆向逐层计算所有神经元的<strong>误差信号和权值修正量</strong>，直到更新完所有神经元的误差信号和权值。</li><li><strong>重复前向传播和反向传播</strong>，直到损失函数或者输出层神经元的误差信号足够小（与给出的容差进行对比），或者达到固定的学习次数（<strong>每一次学习意味着先后进行一次前向传播和反向传播</strong>），就停止学习。同时使用这两个判断条件，可以有效避免欠拟合与过拟合的情况。</li><li>学习完成后，输入测试数据集，得到输出结果，将其映射为样本的具体类型。</li></ol><h2 id=权值初始化><a href=#%e6%9d%83%e5%80%bc%e5%88%9d%e5%a7%8b%e5%8c%96>#</a>
+权值初始化</h2><p>在BP神经网络中，权值初始化是一个非常重要的步骤，它可以影响网络的收敛速度和性能。
+常用的初始化方法如下：</p><ol><li><p>随机初始化
+$$
+w_{ij}^k=random(-a,a)
+$$
+所有权值表现为(-a,a)上的随机分布。</p></li><li><p>Xavier初始化
+略</p></li></ol><h2 id=损失函数><a href=#%e6%8d%9f%e5%a4%b1%e5%87%bd%e6%95%b0>#</a>
+损失函数</h2><p>损失函数，又称为代价函数，<strong>误差函数</strong>，在机器学习和统计建模中用于度量模型预测值与真实值之间的差异或损失程度，在BP神经网络中，表示输出层的实际输出与期望输出之间的总误差。
+常用的损失函数$J$如下：</p><ol><li>均方误差
+$$
+J=\frac{1}{p_m}\sum_{j=1}^{p_m}(y_j^m-\hat{y_i})^2
+$$
+计算所有输出层神经元的输出与期望输出之间的差的平方和，最后求平均。
+由于最后不求平均也能反映误差水平，所以为了求导计算结果的美观，这里选择将其乘以$\frac{1}{2}$，得到
+$$
+J=\frac{1}{2}\sum_{j=1}^{p_m}(y_j^m-\hat{y_i})^2
+$$
+下面将使用该式作为误差函数。</li><li>平均绝对误差
+$$
+J=\frac{1}{p_m}\sum_{i=1}^n\lvert y_i^{p_m}-\hat{y_i}\rvert
+$$</li></ol><h2 id=梯度下降法><a href=#%e6%a2%af%e5%ba%a6%e4%b8%8b%e9%99%8d%e6%b3%95>#</a>
+梯度下降法</h2><p>BP算法的目标就是要通过反向学习，改变权值，使输出层的输出结果越来越接近期望输出。这个问题等价于，求误差函数的极小值，约束条件是上述的输入输出关系。</p><p>利用非线性规划中的“最快下降法（梯度下降法）”，使权值沿着误差函数的负梯度方向改变，得到神经网络权值的修正量为：
+$$
+\begin{equation}\Delta w_{ij}^{k-1}=-\varepsilon\frac{\partial J}{\partial w_{ij}^{k-1}}\quad(\varepsilon>0)\end{equation}
+$$
+其中，$\varepsilon$为学习步长（又称为学习效率），它决定了每次对权值修正量的大小。
+学习效率太大可能导致误差函数增大，难以或者无法收敛到最优解。学习效率太小，则会导致收敛缓慢，需要更多的学习次数和更多的计算，增加学习成本，还可能导致陷入局部最优解无法跳出。
+一般学习效率小于0.5。</p><p>梯度下降法中有一个重要概念，即<strong>误差梯度</strong>。在BP神经网络中，误差梯度表示<strong>由误差函数对所有权值的偏导数构成的向量</strong>，即</p><p>$$
+\Delta E= \left[\frac{\partial J}{\partial w_{ij}^2},\frac{\partial J}{\partial w_{ij}^3},\frac{\partial J}{\partial w_{ij}^n},\frac{\partial J}{\partial w_{ij}^m}\right]\quad \left(\begin{aligned}&amp;n=2,3,\cdots,m \& i=1,2,\cdots,p_n \ &amp;j=1,2,\cdots,p_{n-1}\end{aligned}\right)
+$$
+其中，$p_n$表示第n层神经元的个数。</p><p>可以看到，$权值的修正量=-学习效率\times误差梯度元素$。
+所以求所有权值的修正量，实际上就是求误差梯度。</p><p>对上式求偏导（由于本文章面向初学者，偏向应用，省略复杂计算），得
+$$
+\frac{\partial J}{\partial w_{ij}^{k-1}}=\frac{\partial J}{\partial u_{i}^{k}}y_j^{k-1}
+$$</p><p>记
+$$\begin{equation}d_i^k=\frac{\partial J}{\partial u_i^k}\end{equation}$$
+则
+$$
+\Delta w_{ij}^{k-1}=-\varepsilon d_i^ky_j^{k-1}\quad(k=2,\cdots,m)
+$$</p><p>对 (2) 式求偏导，得
+$$
+\begin{equation}d_i^k=\frac{\partial J}{\partial y_i^k}f_k^{&rsquo;}(u_i^k)\end{equation}
+$$
+分两种情况求 (3) 式：</p><ol><li>对输出层（第m层），$k$=$m$，$y_i^k=y_i^m$，计算得
+$$
+d_i^m=(y_i^m-\hat{y_i})f_m^{&rsquo;}(u_i^m)
+$$</li><li>对于隐层$k$，计算得
+$$
+d_i^k=f_k^{&rsquo;}(u_i^k)\sum_ld_l^{k+1}w_{li}^{k+1}
+$$
+综上，BP学习算法可归纳为<strong>一般式</strong>
+$$
+\Delta w_{ij}^{k-1}=-\varepsilon d_i^ky_j^{k-1}\\
+d_i^m=(y_i^m-\hat{y_i})f_m^{&rsquo;}(u_i^m)\\
+d_i^k=f_k^{&rsquo;}(u_i^k)\sum_ld_l^{k+1}w_{li}^{k+1}\quad(k=m-1,\cdots,2)
+$$
+为了便于求导，取激活函数$f_k$为Sigmoid函数，即
+$$
+y_i^k=f_k(u_i^k)=\frac{1}{1+e^{-u_i^k}}
+$$
+把$y_i^k$与$f_k$代入一般式，则BP算法归纳为
+$$
+\Delta w_{ij}^{k-1}=-\varepsilon d_i^ky_j^{k-1}\\
+d_i^m=y_i^m(1-y_i^m)(y_i^m-\hat{y_i})\\
+d_i^k=y_i^k(1-y_i^k)\sum_ld_l^{k+1}w_{li}^{k+1}\quad(k=m-1,\cdots,2)
+$$</li></ol><p>可以看出，要求第$k$层节点的误差信号$d_i^k$，就要先求$(k+1)$层的误差信号$d_i^{k+1}$。求所有节点的误差信号，求所有权值，求误差梯度，三者是同时进行的。</p><p>误差信号的求取是一个从输出层到输入层的反向传播的递归过程，所以称为反向传播（Backpropagation，BP）学习算法。</p><h2 id=输入输出的编码><a href=#%e8%be%93%e5%85%a5%e8%be%93%e5%87%ba%e7%9a%84%e7%bc%96%e7%a0%81>#</a>
+输入输出的编码</h2><p>在实际问题中，样本特征和分类都是抽象的描述，而神经网络的输入只能接收数值类型，并且输出也是数值类型。所以需要对它们进行编码。</p><p>当然不是所有的样本特征都需要编码。比如以数列作为样本进行分类（如等比和等差数列等），其本身就是数值类型，所以无需编码，这个例子还有一个特殊的地方在于，数列的每一个单独的数值，都不能作为数列的特征，因为这些数值只有作为一个整体，才能表达数列的特征。</p><h3 id=样本特征的编码><a href=#%e6%a0%b7%e6%9c%ac%e7%89%b9%e5%be%81%e7%9a%84%e7%bc%96%e7%a0%81>#</a>
+样本特征的编码</h3><p>很多实际问题中的样本特征，都是难以量化的，为此，需要把这些特征映射为<strong>特征值</strong>，才能作为输入。
+特征值通常取{0,1}或者{-1,1}。</p><p>例如，水果的分类问题：</p><div class=table-wrapper><table><thead><tr><th></th><th>1</th><th>0</th></tr></thead><tbody><tr><td>外形</td><td>圆</td><td>椭圆</td></tr><tr><td>质地</td><td>光滑</td><td>粗糙</td></tr><tr><td>质量</td><td>$\le$ 300g</td><td>$>$ 300g</td></tr></tbody></table></div><p>任意一个水果，若特征值描述为$X=[x_1,x_2,x_3]$，其中，$x_1$，$x_2$，$x_3$分别对应外形、质地、质量三种特征。
+则一个圆形，粗糙，质量小于300g的水果，其特征值为[1,0,1]。</p><h3 id=分类的编码><a href=#%e5%88%86%e7%b1%bb%e7%9a%84%e7%bc%96%e7%a0%81>#</a>
+分类的编码</h3><p>在分类问题中，需要为每一个分类设定一种编码（可称为<strong>名义输出</strong>），也就是指定<strong>分类所对应的输出层神经元的输出</strong>。</p><p>输入学习样本时，为了保证每一个样本数据对应一种分类，需要同时输入一个名义输出作为期望输出，和一个标签作为分类的名称。一般把所有样本数据的集合称为<strong>数据集</strong>，所有标签的集合称为<strong>标签集</strong>。数据集、期望输出列表和标签集，是一一对应的。</p><p>与特征值一样，名义输出值通常是整数，取{0,1}或者{-1,1}。</p><p>这样，神经网络在学习过程中，不断缩小实际输出与期望输出（名义输出）的差值，就是不断地强化神经网络对样本的分类准确度；当神经网络输出了某个设定的名义输出，就可以判定样本的分类。</p><p>由于一般输出层神经元数与分类数保持一致，所以可以让每一个神经元输出对应一种分类，只有一个输出可以取1，其他的只能取0，但输出1的神经元可以变化。例如在四分类问题中，四种名义输出分别为[1,0,0,0]，[0,1,0,0]，[0,0,1,0]，[0,0,0,1]。这样可以保证不同分类的输出，有两位是不同的<sup id=fnref:1><a href=#fn:1 class=footnote-ref role=doc-noteref>1</a></sup>。</p><p>如果输出层神经元数与分类数不一致，比如四分类问题中，输出层只有3个神经元，名义输出可以设置为[0,0,0]，[0,1,1]，[1,0,1]，[1,1,0]。这种选值方式也是为了保证不同分类的输出，有两位不同，所以没有使用[0,0,1]等其他值。</p><p>直觉上，制造更大的区分度，更有利于神经网络对分类的判别。但这样的分类编码也存在一些问题，比如输出值可能与任何名义输出都不相同，则无法确定分类，这种情况也一定程度上反映了神经网络的学习效果不佳。</p><p>实际上存在其他的分类方法，可以避免无法确定分类的情况，即使用softmax函数处理输出，把输出层的输出转换成概率分布，每一个神经元的输出，对应一种分类的概率，总能够选出概率最大的分类。
+softmax函数如下：
+$$
+f_i^m=\frac{e^{y_i}}{\begin{aligned}\sum_{n=1}^{p_m}e^{y_n}\end{aligned}}\quad(i=1,2,\cdots,p_m)
+$$
+其中$p_m$为输出层神经元的个数，$f_i^m$表示输出层的第$i$个神经元输出转换成概率的结果。</p><h3 id=输出到分类的映射><a href=#%e8%be%93%e5%87%ba%e5%88%b0%e5%88%86%e7%b1%bb%e7%9a%84%e6%98%a0%e5%b0%84>#</a>
+输出到分类的映射</h3><p>由于BP神经网络使用非线性激活函数，最终输出通常是小数的序列，而名义输出为整数序列，所以需要把输出层的输出映射成整数，通常使用非线性函数中的<strong>阶跃函数</strong>完成这种转换
+$$
+f(x_i)=\begin{cases}
+0&{x_i&lt;0}\\
+1&{x_i\ge0}
+\end{cases}
+$$
+$$
+f(x_i)=\begin{cases}
+-1&{x_i&lt;0}\\
+1&{x_i\ge0}
+\end{cases}
+$$</p><p>针对不同的名义输出，选择恰当的阶跃函数，就解决了这个问题。</p><h2 id=实例应用与代码><a href=#%e5%ae%9e%e4%be%8b%e5%ba%94%e7%94%a8%e4%b8%8e%e4%bb%a3%e7%a0%81>#</a>
+实例应用与代码</h2><p>以下是一个使用BP神经网络，对数列进行分类的代码示例：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span><span class=lnt>105
+</span><span class=lnt>106
+</span><span class=lnt>107
+</span><span class=lnt>108
+</span><span class=lnt>109
+</span><span class=lnt>110
+</span><span class=lnt>111
+</span><span class=lnt>112
+</span><span class=lnt>113
+</span><span class=lnt>114
+</span><span class=lnt>115
+</span><span class=lnt>116
+</span><span class=lnt>117
+</span><span class=lnt>118
+</span><span class=lnt>119
+</span><span class=lnt>120
+</span><span class=lnt>121
+</span><span class=lnt>122
+</span><span class=lnt>123
+</span><span class=lnt>124
+</span><span class=lnt>125
+</span><span class=lnt>126
+</span><span class=lnt>127
+</span><span class=lnt>128
+</span><span class=lnt>129
+</span><span class=lnt>130
+</span><span class=lnt>131
+</span><span class=lnt>132
+</span><span class=lnt>133
+</span><span class=lnt>134
+</span><span class=lnt>135
+</span><span class=lnt>136
+</span><span class=lnt>137
+</span><span class=lnt>138
+</span><span class=lnt>139
+</span><span class=lnt>140
+</span><span class=lnt>141
+</span><span class=lnt>142
+</span><span class=lnt>143
+</span><span class=lnt>144
+</span><span class=lnt>145
+</span><span class=lnt>146
+</span><span class=lnt>147
+</span><span class=lnt>148
+</span><span class=lnt>149
+</span><span class=lnt>150
+</span><span class=lnt>151
+</span><span class=lnt>152
+</span><span class=lnt>153
+</span><span class=lnt>154
+</span><span class=lnt>155
+</span><span class=lnt>156
+</span><span class=lnt>157
+</span><span class=lnt>158
+</span><span class=lnt>159
+</span><span class=lnt>160
+</span><span class=lnt>161
+</span><span class=lnt>162
+</span><span class=lnt>163
+</span><span class=lnt>164
+</span><span class=lnt>165
+</span><span class=lnt>166
+</span><span class=lnt>167
+</span><span class=lnt>168
+</span><span class=lnt>169
+</span><span class=lnt>170
+</span><span class=lnt>171
+</span><span class=lnt>172
+</span><span class=lnt>173
+</span><span class=lnt>174
+</span><span class=lnt>175
+</span><span class=lnt>176
+</span><span class=lnt>177
+</span><span class=lnt>178
+</span><span class=lnt>179
+</span><span class=lnt>180
+</span><span class=lnt>181
+</span><span class=lnt>182
+</span><span class=lnt>183
+</span><span class=lnt>184
+</span><span class=lnt>185
+</span><span class=lnt>186
+</span><span class=lnt>187
+</span><span class=lnt>188
+</span><span class=lnt>189
+</span><span class=lnt>190
+</span><span class=lnt>191
+</span><span class=lnt>192
+</span><span class=lnt>193
+</span><span class=lnt>194
+</span><span class=lnt>195
+</span><span class=lnt>196
+</span><span class=lnt>197
+</span><span class=lnt>198
+</span><span class=lnt>199
+</span><span class=lnt>200
+</span><span class=lnt>201
+</span><span class=lnt>202
+</span><span class=lnt>203
+</span><span class=lnt>204
+</span><span class=lnt>205
+</span><span class=lnt>206
+</span><span class=lnt>207
+</span><span class=lnt>208
+</span><span class=lnt>209
+</span><span class=lnt>210
+</span><span class=lnt>211
+</span><span class=lnt>212
+</span><span class=lnt>213
+</span><span class=lnt>214
+</span><span class=lnt>215
+</span><span class=lnt>216
+</span><span class=lnt>217
+</span><span class=lnt>218
+</span><span class=lnt>219
+</span><span class=lnt>220
+</span><span class=lnt>221
+</span><span class=lnt>222
+</span><span class=lnt>223
+</span><span class=lnt>224
+</span><span class=lnt>225
+</span><span class=lnt>226
+</span><span class=lnt>227
+</span><span class=lnt>228
+</span><span class=lnt>229
+</span><span class=lnt>230
+</span><span class=lnt>231
+</span><span class=lnt>232
+</span><span class=lnt>233
+</span><span class=lnt>234
+</span><span class=lnt>235
+</span><span class=lnt>236
+</span><span class=lnt>237
+</span><span class=lnt>238
+</span><span class=lnt>239
+</span><span class=lnt>240
+</span><span class=lnt>241
+</span><span class=lnt>242
+</span><span class=lnt>243
+</span><span class=lnt>244
+</span><span class=lnt>245
+</span><span class=lnt>246
+</span><span class=lnt>247
+</span><span class=lnt>248
+</span><span class=lnt>249
+</span><span class=lnt>250
+</span><span class=lnt>251
+</span><span class=lnt>252
+</span><span class=lnt>253
+</span><span class=lnt>254
+</span><span class=lnt>255
+</span><span class=lnt>256
+</span><span class=lnt>257
+</span><span class=lnt>258
+</span><span class=lnt>259
+</span><span class=lnt>260
+</span><span class=lnt>261
+</span><span class=lnt>262
+</span><span class=lnt>263
+</span><span class=lnt>264
+</span><span class=lnt>265
+</span><span class=lnt>266
+</span><span class=lnt>267
+</span><span class=lnt>268
+</span><span class=lnt>269
+</span><span class=lnt>270
+</span><span class=lnt>271
+</span><span class=lnt>272
+</span><span class=lnt>273
+</span><span class=lnt>274
+</span><span class=lnt>275
+</span><span class=lnt>276
+</span><span class=lnt>277
+</span><span class=lnt>278
+</span><span class=lnt>279
+</span><span class=lnt>280
+</span><span class=lnt>281
+</span><span class=lnt>282
+</span><span class=lnt>283
+</span><span class=lnt>284
+</span><span class=lnt>285
+</span><span class=lnt>286
+</span><span class=lnt>287
+</span><span class=lnt>288
+</span><span class=lnt>289
+</span><span class=lnt>290
+</span><span class=lnt>291
+</span><span class=lnt>292
+</span><span class=lnt>293
+</span><span class=lnt>294
+</span><span class=lnt>295
+</span><span class=lnt>296
+</span><span class=lnt>297
+</span><span class=lnt>298
+</span><span class=lnt>299
+</span><span class=lnt>300
+</span><span class=lnt>301
+</span><span class=lnt>302
+</span><span class=lnt>303
+</span><span class=lnt>304
+</span><span class=lnt>305
+</span><span class=lnt>306
+</span><span class=lnt>307
+</span><span class=lnt>308
+</span><span class=lnt>309
+</span><span class=lnt>310
+</span><span class=lnt>311
+</span><span class=lnt>312
+</span><span class=lnt>313
+</span><span class=lnt>314
+</span><span class=lnt>315
+</span><span class=lnt>316
+</span><span class=lnt>317
+</span><span class=lnt>318
+</span><span class=lnt>319
+</span><span class=lnt>320
+</span><span class=lnt>321
+</span><span class=lnt>322
+</span><span class=lnt>323
+</span><span class=lnt>324
+</span><span class=lnt>325
+</span><span class=lnt>326
+</span><span class=lnt>327
+</span><span class=lnt>328
+</span><span class=lnt>329
+</span><span class=lnt>330
+</span><span class=lnt>331
+</span><span class=lnt>332
+</span><span class=lnt>333
+</span><span class=lnt>334
+</span><span class=lnt>335
+</span><span class=lnt>336
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>import</span> <span class=nn>numpy</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 神经元类</span>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>Neuron</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=fm>__init__</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>weights</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=c1># 神经元有一个权重列表，包含其到下一层神经元的权重</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>weights</span> <span class=o>=</span> <span class=n>weights</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>output</span> <span class=o>=</span> <span class=mi>0</span>  <span class=c1># 到下一层节点的输出</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>deviationSign</span> <span class=o>=</span> <span class=kc>None</span>  <span class=c1># 误差信号</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=fm>__str__</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=sa>f</span><span class=s2>&#34;[误差信号：</span><span class=si>{</span><span class=bp>self</span><span class=o>.</span><span class=n>deviationSign</span><span class=si>}</span><span class=s2>, 输出：</span><span class=si>{</span><span class=bp>self</span><span class=o>.</span><span class=n>output</span><span class=si>}</span><span class=s2>, 权重：</span><span class=si>{</span><span class=bp>self</span><span class=o>.</span><span class=n>weights</span><span class=si>}</span><span class=s2>]&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 神经网络类</span>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>NerveNet</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=fm>__init__</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>struct</span><span class=p>,</span> <span class=n>offset</span><span class=o>=</span><span class=mi>1</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>        创建神经网络
+</span></span></span><span class=line><span class=cl><span class=s2>        :param struct: 各层神经元数量的数组（不包括每层的偏置节点），每层的实际节点数为struct[i]+1，输出层没有偏置节点！
+</span></span></span><span class=line><span class=cl><span class=s2>        :param offset: 偏置值
+</span></span></span><span class=line><span class=cl><span class=s2>        &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=n>layers</span> <span class=o>=</span> <span class=p>[]</span>
+</span></span><span class=line><span class=cl>        <span class=n>nodes</span> <span class=o>=</span> <span class=p>[]</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>targets</span> <span class=o>=</span> <span class=kc>None</span>  <span class=c1># 分类标签</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>desireValues</span> <span class=o>=</span> <span class=kc>None</span>  <span class=c1># 期望值（分类对应的输出）</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># 遍历层</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=n>struct</span><span class=p>)</span> <span class=o>-</span> <span class=mi>2</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>            <span class=c1># 遍历节点(每层加上一个偏置节点）</span>
+</span></span><span class=line><span class=cl>            <span class=k>for</span> <span class=n>j</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>struct</span><span class=p>[</span><span class=n>i</span><span class=p>]</span> <span class=o>+</span> <span class=mi>1</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>                <span class=c1># 除了输出层，都要设置权值</span>
+</span></span><span class=line><span class=cl>                <span class=k>if</span> <span class=n>i</span> <span class=o>!=</span> <span class=nb>len</span><span class=p>(</span><span class=n>struct</span><span class=p>)</span> <span class=o>-</span> <span class=mi>1</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                    <span class=n>nodes</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>Neuron</span><span class=p>([</span><span class=n>numpy</span><span class=o>.</span><span class=n>random</span><span class=o>.</span><span class=n>uniform</span><span class=p>(</span><span class=o>-</span><span class=mf>0.1</span><span class=p>,</span> <span class=mf>0.1</span><span class=p>)</span> <span class=k>for</span> <span class=n>x</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>struct</span><span class=p>[</span><span class=n>i</span> <span class=o>+</span> <span class=mi>1</span><span class=p>]</span> <span class=o>+</span> <span class=mi>1</span><span class=p>)]))</span>
+</span></span><span class=line><span class=cl>                <span class=k>else</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                    <span class=n>nodes</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>Neuron</span><span class=p>(</span><span class=kc>None</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>            <span class=n>nodes</span><span class=p>[</span><span class=o>-</span><span class=mi>1</span><span class=p>]</span><span class=o>.</span><span class=n>output</span> <span class=o>=</span> <span class=n>offset</span>  <span class=c1># 最后一个节点是偏置节点，输出永远为偏置值</span>
+</span></span><span class=line><span class=cl>            <span class=n>layers</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>nodes</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># 倒数第二层没有对偏置节点的权值</span>
+</span></span><span class=line><span class=cl>        <span class=n>nodes</span> <span class=o>=</span> <span class=p>[]</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>struct</span><span class=p>[</span><span class=o>-</span><span class=mi>2</span><span class=p>]</span> <span class=o>+</span> <span class=mi>1</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>            <span class=n>nodes</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>Neuron</span><span class=p>([</span><span class=n>numpy</span><span class=o>.</span><span class=n>random</span><span class=o>.</span><span class=n>uniform</span><span class=p>(</span><span class=o>-</span><span class=mf>0.1</span><span class=p>,</span> <span class=mf>0.1</span><span class=p>)</span> <span class=k>for</span> <span class=n>x</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>struct</span><span class=p>[</span><span class=o>-</span><span class=mi>1</span><span class=p>])]))</span>
+</span></span><span class=line><span class=cl>        <span class=n>nodes</span><span class=p>[</span><span class=o>-</span><span class=mi>1</span><span class=p>]</span><span class=o>.</span><span class=n>output</span> <span class=o>=</span> <span class=n>offset</span>  <span class=c1># 最后一个节点是偏置节点，输出永远为偏置值</span>
+</span></span><span class=line><span class=cl>        <span class=n>layers</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>nodes</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>nodes</span> <span class=o>=</span> <span class=p>[]</span>
+</span></span><span class=line><span class=cl>        <span class=c1># 输出层没有权值和偏置节点</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>struct</span><span class=p>[</span><span class=o>-</span><span class=mi>1</span><span class=p>]):</span>
+</span></span><span class=line><span class=cl>            <span class=n>nodes</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>Neuron</span><span class=p>(</span><span class=kc>None</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>        <span class=n>layers</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>nodes</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>layers</span> <span class=o>=</span> <span class=n>layers</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=fm>__str__</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=nb>str</span> <span class=o>=</span> <span class=s2>&#34;[&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>)):</span>
+</span></span><span class=line><span class=cl>            <span class=nb>str</span> <span class=o>+=</span> <span class=s2>&#34;[&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=k>for</span> <span class=n>j</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>)):</span>
+</span></span><span class=line><span class=cl>                <span class=nb>str</span> <span class=o>+=</span> <span class=n>__builtins__</span><span class=o>.</span><span class=n>str</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=n>i</span><span class=p>][</span><span class=n>j</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>            <span class=nb>str</span> <span class=o>+=</span> <span class=s2>&#34;], &#34;</span>
+</span></span><span class=line><span class=cl>        <span class=nb>str</span> <span class=o>+=</span> <span class=s2>&#34;]&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=nb>str</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>study</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>inputs</span><span class=p>,</span> <span class=n>desireValues</span><span class=p>,</span> <span class=n>targets</span><span class=p>,</span> <span class=n>step</span><span class=p>,</span> <span class=n>cycle</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>tolerance</span><span class=o>=</span><span class=kc>None</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>        开始学习
+</span></span></span><span class=line><span class=cl><span class=s2>        :param inputs: 训练集
+</span></span></span><span class=line><span class=cl><span class=s2>        :param desireValues: 期望输出
+</span></span></span><span class=line><span class=cl><span class=s2>        :param targets: 分类标签，与训练集的元素对应
+</span></span></span><span class=line><span class=cl><span class=s2>        :param step: 学习步长（效率）
+</span></span></span><span class=line><span class=cl><span class=s2>        :param cycle: 学习周期数
+</span></span></span><span class=line><span class=cl><span class=s2>        :param tolerance: 容差
+</span></span></span><span class=line><span class=cl><span class=s2>        :return:
+</span></span></span><span class=line><span class=cl><span class=s2>
+</span></span></span><span class=line><span class=cl><span class=s2>         学习的终止条件有两种：
+</span></span></span><span class=line><span class=cl><span class=s2>            1.完成指定的学习周期数。
+</span></span></span><span class=line><span class=cl><span class=s2>
+</span></span></span><span class=line><span class=cl><span class=s2>            2.输出层的误差小于给定的容差。
+</span></span></span><span class=line><span class=cl><span class=s2>            完成指定的学习周期数：
+</span></span></span><span class=line><span class=cl><span class=s2>
+</span></span></span><span class=line><span class=cl><span class=s2>优点：
+</span></span></span><span class=line><span class=cl><span class=s2>简单直观：学习周期数是一个易于理解和控制的参数，因为它表示网络在整个数据集上迭代的次数。
+</span></span></span><span class=line><span class=cl><span class=s2>可调性：可以根据经验或实验结果调整学习周期数，以平衡训练时间和模型性能。
+</span></span></span><span class=line><span class=cl><span class=s2>缺点：
+</span></span></span><span class=line><span class=cl><span class=s2>可能导致过拟合：如果学习周期数设置得太高，可能会导致模型在训练数据上过度拟合，而在测试数据上泛化性能不佳。
+</span></span></span><span class=line><span class=cl><span class=s2>输出层的误差小于给定的容差：
+</span></span></span><span class=line><span class=cl><span class=s2>
+</span></span></span><span class=line><span class=cl><span class=s2>优点：
+</span></span></span><span class=line><span class=cl><span class=s2>直接衡量网络性能：输出层误差是对模型性能的直接度量，反映了网络在当前权重下的预测准确度。
+</span></span></span><span class=line><span class=cl><span class=s2>精确控制：通过调整容差可以更精确地控制训练终止条件。
+</span></span></span><span class=line><span class=cl><span class=s2>缺点：
+</span></span></span><span class=line><span class=cl><span class=s2>受数据分布影响：输出层误差可能受到数据分布的影响，如果训练数据存在噪声或不均衡，可能会导致误差不稳定。
+</span></span></span><span class=line><span class=cl><span class=s2>在实践中，通常会将这两个条件结合使用，以确保模型训练的有效性和稳健性。比如，在训练过程中同时监控学习周期数和输出层误差，当其中一个条件满足时停止训练。这样可以避免过度拟合，并在网络性能达到一定水平后及时停止训练，节省时间和计算资源。
+</span></span></span><span class=line><span class=cl><span class=s2>
+</span></span></span><span class=line><span class=cl><span class=s2>        &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>desireValues</span> <span class=o>=</span> <span class=n>desireValues</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>targets</span> <span class=o>=</span> <span class=n>targets</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>cycle</span> <span class=ow>is</span> <span class=ow>not</span> <span class=kc>None</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>cycle</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>                <span class=k>for</span> <span class=n>j</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=n>inputs</span><span class=p>)):</span>
+</span></span><span class=line><span class=cl>                    <span class=bp>self</span><span class=o>.</span><span class=n>forward</span><span class=p>(</span><span class=n>inputs</span><span class=p>[</span><span class=n>j</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>                    <span class=bp>self</span><span class=o>.</span><span class=n>backward</span><span class=p>(</span><span class=n>desireValues</span><span class=p>[</span><span class=n>j</span><span class=p>],</span> <span class=n>step</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=k>elif</span> <span class=n>tolerance</span> <span class=ow>is</span> <span class=ow>not</span> <span class=kc>None</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=c1># 使用容差时，先学习一遍，再进行判断</span>
+</span></span><span class=line><span class=cl>            <span class=k>for</span> <span class=n>j</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=n>inputs</span><span class=p>)):</span>
+</span></span><span class=line><span class=cl>                <span class=bp>self</span><span class=o>.</span><span class=n>forward</span><span class=p>(</span><span class=n>inputs</span><span class=p>[</span><span class=n>j</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>                <span class=bp>self</span><span class=o>.</span><span class=n>backward</span><span class=p>(</span><span class=n>desireValues</span><span class=p>[</span><span class=n>j</span><span class=p>],</span> <span class=n>step</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>while</span> <span class=bp>self</span><span class=o>.</span><span class=n>getFinalDeviation</span><span class=p>(</span><span class=n>desireValues</span><span class=p>)</span> <span class=o>&gt;</span> <span class=n>tolerance</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                <span class=k>for</span> <span class=n>j</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=n>inputs</span><span class=p>)):</span>
+</span></span><span class=line><span class=cl>                    <span class=bp>self</span><span class=o>.</span><span class=n>forward</span><span class=p>(</span><span class=n>inputs</span><span class=p>[</span><span class=n>j</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>                    <span class=bp>self</span><span class=o>.</span><span class=n>backward</span><span class=p>(</span><span class=n>desireValues</span><span class=p>[</span><span class=n>j</span><span class=p>],</span> <span class=n>step</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># 把原始输出映射到特征空间，然后根据特征值判断分类</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>getEigenValue</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=n>eigenvalue</span> <span class=o>=</span> <span class=p>[]</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>node</span> <span class=ow>in</span> <span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=o>-</span><span class=mi>1</span><span class=p>]:</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=n>node</span><span class=o>.</span><span class=n>output</span> <span class=o>&lt;</span> <span class=mf>0.5</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                <span class=n>eigenvalue</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=mi>0</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>else</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                <span class=n>eigenvalue</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=n>eigenvalue</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>work</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>dataset</span><span class=p>,</span> <span class=n>targets</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>        学习完成后的工作函数
+</span></span></span><span class=line><span class=cl><span class=s2>        :param dataset: 待测数据集
+</span></span></span><span class=line><span class=cl><span class=s2>        :param targets: 待测数据的真实标签
+</span></span></span><span class=line><span class=cl><span class=s2>        :return:
+</span></span></span><span class=line><span class=cl><span class=s2>        &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=n>eigenvalue</span> <span class=o>=</span> <span class=kc>None</span>
+</span></span><span class=line><span class=cl>        <span class=n>count</span><span class=o>=</span><span class=mi>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>index</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=n>dataset</span><span class=p>)):</span>
+</span></span><span class=line><span class=cl>            <span class=bp>self</span><span class=o>.</span><span class=n>forward</span><span class=p>(</span><span class=n>dataset</span><span class=p>[</span><span class=n>index</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>            <span class=n>eigenvalue</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>getEigenValue</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>            <span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;</span><span class=se>\n</span><span class=s2>输入为：</span><span class=si>{</span><span class=n>dataset</span><span class=p>[</span><span class=n>index</span><span class=p>]</span><span class=si>}</span><span class=s2>，原始输出为：&#34;</span>
+</span></span><span class=line><span class=cl>                  <span class=sa>f</span><span class=s2>&#34;</span><span class=si>{</span><span class=p>[</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=o>-</span><span class=mi>1</span><span class=p>][</span><span class=n>x</span><span class=p>]</span><span class=o>.</span><span class=n>output</span> <span class=k>for</span> <span class=n>x</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=o>-</span><span class=mi>1</span><span class=p>]))]</span><span class=si>}</span><span class=s2>，特征值为：</span><span class=si>{</span><span class=n>eigenvalue</span><span class=si>}</span><span class=s2>，&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>desireValues</span><span class=p>)):</span>
+</span></span><span class=line><span class=cl>                <span class=k>if</span> <span class=n>numpy</span><span class=o>.</span><span class=n>array_equal</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>desireValues</span><span class=p>[</span><span class=n>i</span><span class=p>],</span> <span class=n>eigenvalue</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>                    <span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;判断分类为 </span><span class=si>{</span><span class=bp>self</span><span class=o>.</span><span class=n>targets</span><span class=p>[</span><span class=n>i</span><span class=p>]</span><span class=si>}</span><span class=s2>，正确分类为 </span><span class=si>{</span><span class=n>targets</span><span class=p>[</span><span class=n>index</span><span class=p>]</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>,</span> <span class=n>end</span><span class=o>=</span><span class=s2>&#34;</span><span class=se>\n</span><span class=s2>&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>                    <span class=k>if</span> <span class=bp>self</span><span class=o>.</span><span class=n>targets</span><span class=p>[</span><span class=n>i</span><span class=p>]</span><span class=o>==</span><span class=n>targets</span><span class=p>[</span><span class=n>index</span><span class=p>]:</span>
+</span></span><span class=line><span class=cl>                        <span class=n>count</span><span class=o>+=</span><span class=mi>1</span>
+</span></span><span class=line><span class=cl>                    <span class=k>break</span>
+</span></span><span class=line><span class=cl>        <span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;共</span><span class=si>{</span><span class=nb>len</span><span class=p>(</span><span class=n>dataset</span><span class=p>)</span><span class=si>}</span><span class=s2>个输入，有</span><span class=si>{</span><span class=n>count</span><span class=si>}</span><span class=s2>个分类正确，正确率</span><span class=si>{</span><span class=n>count</span><span class=o>/</span><span class=nb>len</span><span class=p>(</span><span class=n>dataset</span><span class=p>)</span><span class=o>*</span><span class=mi>100</span><span class=si>:</span><span class=s2>.2f</span><span class=si>}</span><span class=s2>%&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># def sigmoid(self, input, function):</span>
+</span></span><span class=line><span class=cl>    <span class=c1>#     &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=c1>#     激活函数</span>
+</span></span><span class=line><span class=cl>    <span class=c1>#     :param input: 神经元的输入</span>
+</span></span><span class=line><span class=cl>    <span class=c1>#     :param function:</span>
+</span></span><span class=line><span class=cl>    <span class=c1>#     :return:</span>
+</span></span><span class=line><span class=cl>    <span class=c1>#     &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=c1>#     if function.lower()==&#34;sigmoid&#34;:</span>
+</span></span><span class=line><span class=cl>    <span class=c1>#</span>
+</span></span><span class=line><span class=cl>    <span class=c1>#     elif function.lower()==&#34;&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=c1>#</span>
+</span></span><span class=line><span class=cl>    <span class=c1>#     return numpy.exp(-input)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>calculateOutput</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>layerNum</span><span class=p>,</span> <span class=n>count</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>        计算节点的输出
+</span></span></span><span class=line><span class=cl><span class=s2>        :param layerNum: 节点层数
+</span></span></span><span class=line><span class=cl><span class=s2>        :param count: 节点顺序
+</span></span></span><span class=line><span class=cl><span class=s2>        :return:
+</span></span></span><span class=line><span class=cl><span class=s2>        &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=nb>input</span> <span class=o>=</span> <span class=mi>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>node</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=n>layerNum</span><span class=p>][</span><span class=n>count</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>        <span class=c1># 节点的输入 = 上一层所有节点与权值乘积之和</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>        注意！不同于一些其他语言，在python中循环使用的迭代变量具有函数作用域，而不是块作用域。
+</span></span></span><span class=line><span class=cl><span class=s2>        这意味着该变量在函数外可见。
+</span></span></span><span class=line><span class=cl><span class=s2>        如果在循环之前已经存在同名变量，循环会改变该变量的值！
+</span></span></span><span class=line><span class=cl><span class=s2>        &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>each</span> <span class=ow>in</span> <span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=n>layerNum</span> <span class=o>-</span> <span class=mi>1</span><span class=p>]:</span>
+</span></span><span class=line><span class=cl>            <span class=nb>input</span> <span class=o>+=</span> <span class=n>each</span><span class=o>.</span><span class=n>output</span> <span class=o>*</span> <span class=n>each</span><span class=o>.</span><span class=n>weights</span><span class=p>[</span><span class=n>count</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># 把节点输入作为参数，传给激活函数，得到节点的输出</span>
+</span></span><span class=line><span class=cl>        <span class=n>node</span><span class=o>.</span><span class=n>output</span> <span class=o>=</span> <span class=mi>1</span> <span class=o>/</span> <span class=p>(</span><span class=mi>1</span> <span class=o>+</span> <span class=n>numpy</span><span class=o>.</span><span class=n>power</span><span class=p>(</span><span class=n>numpy</span><span class=o>.</span><span class=n>e</span><span class=p>,</span> <span class=o>-</span><span class=nb>input</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>        输出语句
+</span></span></span><span class=line><span class=cl><span class=s2>        python中的浮点类型与整型计算时，不能使用+=符号
+</span></span></span><span class=line><span class=cl><span class=s2>        &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=c1># print(f&#34;节点{layerNum+1}-{count+1}的输出: &#34;+str(node.output))</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># 向前传播</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>forward</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=nb>input</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=c1># 设置输入层的输出</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=mi>0</span><span class=p>])</span> <span class=o>-</span> <span class=mi>1</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>            <span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=mi>0</span><span class=p>][</span><span class=n>i</span><span class=p>]</span><span class=o>.</span><span class=n>output</span> <span class=o>=</span> <span class=nb>input</span><span class=p>[</span><span class=n>i</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># 遍历层</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=mi>1</span><span class=p>,</span> <span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>)):</span>
+</span></span><span class=line><span class=cl>            <span class=c1># 遍历列（不包括偏置节点）</span>
+</span></span><span class=line><span class=cl>            <span class=k>for</span> <span class=n>j</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=n>i</span><span class=p>])</span> <span class=o>-</span> <span class=mi>1</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>                <span class=c1># 计算每个节点的输出</span>
+</span></span><span class=line><span class=cl>                <span class=bp>self</span><span class=o>.</span><span class=n>calculateOutput</span><span class=p>(</span><span class=n>i</span><span class=p>,</span> <span class=n>j</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># 因为输出层的最后一个节点不是偏置节点，所以单独计算</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>calculateOutput</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>)</span> <span class=o>-</span> <span class=mi>1</span><span class=p>,</span> <span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=o>-</span><span class=mi>1</span><span class=p>])</span> <span class=o>-</span> <span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>getFinalDeviation</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>desireValues</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>        计算输出层的总误差
+</span></span></span><span class=line><span class=cl><span class=s2>        :param desireValues: 期望输出列表
+</span></span></span><span class=line><span class=cl><span class=s2>        :return:
+</span></span></span><span class=line><span class=cl><span class=s2>        &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=n>value</span> <span class=o>=</span> <span class=mi>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=o>-</span><span class=mi>1</span><span class=p>])):</span>
+</span></span><span class=line><span class=cl>            <span class=n>value</span> <span class=o>+=</span> <span class=n>numpy</span><span class=o>.</span><span class=n>power</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=o>-</span><span class=mi>1</span><span class=p>][</span><span class=n>i</span><span class=p>]</span><span class=o>.</span><span class=n>output</span> <span class=o>-</span> <span class=n>desireValues</span><span class=p>[</span><span class=n>i</span><span class=p>],</span> <span class=mi>2</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=n>value</span> <span class=o>/</span> <span class=mi>2</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>getDeviationSign</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>layerNum</span><span class=p>,</span> <span class=n>count</span><span class=p>,</span> <span class=n>desireValue</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>        计算各神经元的误差信号
+</span></span></span><span class=line><span class=cl><span class=s2>        :param layerNum: 层数
+</span></span></span><span class=line><span class=cl><span class=s2>        :param count: 顺序
+</span></span></span><span class=line><span class=cl><span class=s2>        :param desireValue: 期望输出
+</span></span></span><span class=line><span class=cl><span class=s2>        :return:
+</span></span></span><span class=line><span class=cl><span class=s2>        &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=n>node</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=n>layerNum</span><span class=p>][</span><span class=n>count</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>layerNum</span> <span class=o>==</span> <span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>)</span> <span class=o>-</span> <span class=mi>1</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=n>node</span><span class=o>.</span><span class=n>deviationSign</span> <span class=o>=</span> <span class=n>node</span><span class=o>.</span><span class=n>output</span> <span class=o>*</span> <span class=p>(</span><span class=mi>1</span> <span class=o>-</span> <span class=n>node</span><span class=o>.</span><span class=n>output</span><span class=p>)</span> <span class=o>*</span> <span class=p>(</span><span class=n>node</span><span class=o>.</span><span class=n>output</span> <span class=o>-</span> <span class=n>desireValue</span><span class=p>[</span><span class=n>count</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>        <span class=k>else</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=n>node</span><span class=o>.</span><span class=n>deviationSign</span> <span class=o>=</span> <span class=p>(</span><span class=n>node</span><span class=o>.</span><span class=n>output</span> <span class=o>*</span> <span class=p>(</span><span class=mi>1</span> <span class=o>-</span> <span class=n>node</span><span class=o>.</span><span class=n>output</span><span class=p>)</span> <span class=o>*</span>
+</span></span><span class=line><span class=cl>                                  <span class=nb>sum</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=n>layerNum</span> <span class=o>+</span> <span class=mi>1</span><span class=p>][</span><span class=n>x</span><span class=p>]</span><span class=o>.</span><span class=n>deviationSign</span> <span class=o>*</span> <span class=n>node</span><span class=o>.</span><span class=n>weights</span><span class=p>[</span><span class=n>x</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>                                      <span class=k>for</span> <span class=n>x</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=n>layerNum</span> <span class=o>+</span> <span class=mi>1</span><span class=p>]))))</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>        输出语句
+</span></span></span><span class=line><span class=cl><span class=s2>        &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=c1># print(f&#34;节点{layerNum+1}-{count+1}的误差信号：{node.deviationSign}&#34;)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>updateWeights</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>step</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>        权值学习；
+</span></span></span><span class=line><span class=cl><span class=s2>        前一层节点到后一层节点的权值修正量= -(步长)*后一层节点的误差信号*前一层节点的输出
+</span></span></span><span class=line><span class=cl><span class=s2>        :param layerNum:
+</span></span></span><span class=line><span class=cl><span class=s2>        :param count:
+</span></span></span><span class=line><span class=cl><span class=s2>        :param step: 学习步长
+</span></span></span><span class=line><span class=cl><span class=s2>        :return:
+</span></span></span><span class=line><span class=cl><span class=s2>        &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>)</span> <span class=o>-</span> <span class=mi>1</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>            <span class=k>for</span> <span class=n>j</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=n>i</span><span class=p>])):</span>
+</span></span><span class=line><span class=cl>                <span class=c1># 遍历下一层的节点</span>
+</span></span><span class=line><span class=cl>                <span class=k>for</span> <span class=n>k</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=n>i</span> <span class=o>+</span> <span class=mi>1</span><span class=p>])):</span>
+</span></span><span class=line><span class=cl>                    <span class=c1># 计算误差梯度</span>
+</span></span><span class=line><span class=cl>                    <span class=n>correction</span> <span class=o>=</span> <span class=o>-</span><span class=n>step</span> <span class=o>*</span> <span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=n>i</span> <span class=o>+</span> <span class=mi>1</span><span class=p>][</span><span class=n>k</span><span class=p>]</span><span class=o>.</span><span class=n>deviationSign</span> <span class=o>*</span> <span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=n>i</span><span class=p>][</span><span class=n>j</span><span class=p>]</span><span class=o>.</span><span class=n>output</span>
+</span></span><span class=line><span class=cl>                    <span class=c1># 权值学习</span>
+</span></span><span class=line><span class=cl>                    <span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=n>i</span><span class=p>][</span><span class=n>j</span><span class=p>]</span><span class=o>.</span><span class=n>weights</span><span class=p>[</span><span class=n>k</span><span class=p>]</span> <span class=o>+=</span> <span class=n>correction</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>                    <span class=s2>&#34;&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>                    输出语句
+</span></span></span><span class=line><span class=cl><span class=s2>                    &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>                    <span class=c1># print(f&#34;节点{i+1}-{j+1}的误差梯度：{correction}&#34;)</span>
+</span></span><span class=line><span class=cl>                    <span class=c1># print(f&#34;节点{i+1}-{j+1}的权值更新：{self.layers[i][j].weights[k]}&#34;)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># for i in range(len(self.layers)):</span>
+</span></span><span class=line><span class=cl>        <span class=c1>#     for j in range(len(self.layers[i])):</span>
+</span></span><span class=line><span class=cl>        <span class=c1>#         print(self.layers[i][j].weights)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>backward</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>desireValue</span><span class=p>,</span> <span class=n>step</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>        反向传播
+</span></span></span><span class=line><span class=cl><span class=s2>        :param desireValue: 期望输出
+</span></span></span><span class=line><span class=cl><span class=s2>        :return:
+</span></span></span><span class=line><span class=cl><span class=s2>        &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=c1># 逆向遍历 range生成从len()-1到-1的逆序序列（步长为-1）</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>)</span> <span class=o>-</span> <span class=mi>1</span><span class=p>,</span> <span class=o>-</span><span class=mi>1</span><span class=p>,</span> <span class=o>-</span><span class=mi>1</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>            <span class=k>for</span> <span class=n>j</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>layers</span><span class=p>[</span><span class=n>i</span><span class=p>])):</span>
+</span></span><span class=line><span class=cl>                <span class=bp>self</span><span class=o>.</span><span class=n>getDeviationSign</span><span class=p>(</span><span class=n>i</span><span class=p>,</span> <span class=n>j</span><span class=p>,</span> <span class=n>desireValue</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>updateWeights</span><span class=p>(</span><span class=n>step</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>struct</span> <span class=o>=</span> <span class=p>[</span><span class=mi>4</span><span class=p>,</span> <span class=mi>8</span><span class=p>,</span> <span class=mi>3</span><span class=p>]</span>  <span class=c1># 输入层特征数，隐层神经元数，输出层分类数</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>train</span> <span class=o>=</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>1</span><span class=p>,</span> <span class=mi>2</span><span class=p>,</span> <span class=mi>3</span><span class=p>,</span> <span class=mi>4</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>100</span><span class=p>,</span> <span class=mi>101</span><span class=p>,</span> <span class=mi>102</span><span class=p>,</span> <span class=mi>103</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>1</span><span class=p>,</span> <span class=mi>3</span><span class=p>,</span> <span class=mi>5</span><span class=p>,</span> <span class=mi>7</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>50</span><span class=p>,</span> <span class=mi>52</span><span class=p>,</span> <span class=mi>54</span><span class=p>,</span> <span class=mi>56</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>1</span><span class=p>,</span> <span class=mi>4</span><span class=p>,</span> <span class=mi>9</span><span class=p>,</span> <span class=mi>16</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>9</span><span class=p>,</span> <span class=mi>16</span><span class=p>,</span> <span class=mi>25</span><span class=p>,</span> <span class=mi>36</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>2</span><span class=p>,</span> <span class=mi>4</span><span class=p>,</span> <span class=mi>8</span><span class=p>,</span> <span class=mi>16</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>20</span><span class=p>,</span> <span class=mi>40</span><span class=p>,</span> <span class=mi>80</span><span class=p>,</span> <span class=mi>160</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=c1>#[10, 12, 14, 16],</span>
+</span></span><span class=line><span class=cl><span class=p>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>desire</span> <span class=o>=</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>0</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>1</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>0</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>1</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>0</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=mi>0</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>0</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=mi>0</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>1</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>0</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>1</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>0</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>1</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=mi>1</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>1</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=mi>1</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=c1># [0,1,0]</span>
+</span></span><span class=line><span class=cl><span class=p>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>targets</span> <span class=o>=</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;公差为1的等差数列&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;公差为1的等差数列&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;公差为2的等差数列&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;公差为2的等差数列&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;x的平方数列&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;x的平方数列&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;公比为2的等比数列&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;公比为2的等比数列&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=c1># &#34;公差为2的等差数列&#34;</span>
+</span></span><span class=line><span class=cl><span class=p>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>test</span> <span class=o>=</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>2</span><span class=p>,</span> <span class=mi>3</span><span class=p>,</span> <span class=mi>4</span><span class=p>,</span> <span class=mi>5</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>4</span><span class=p>,</span> <span class=mi>6</span><span class=p>,</span> <span class=mi>8</span><span class=p>,</span> <span class=mi>10</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>9</span><span class=p>,</span> <span class=mi>16</span><span class=p>,</span> <span class=mi>25</span><span class=p>,</span> <span class=mi>36</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>120</span><span class=p>,</span> <span class=mi>122</span><span class=p>,</span> <span class=mi>124</span><span class=p>,</span> <span class=mi>126</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>[</span><span class=mi>3</span><span class=p>,</span><span class=mi>6</span><span class=p>,</span><span class=mi>12</span><span class=p>,</span><span class=mi>24</span><span class=p>]</span>
+</span></span><span class=line><span class=cl><span class=p>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>testTargets</span><span class=o>=</span><span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;公差为1的等差数列&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;公差为2的等差数列&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;x的平方数列&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;公差为2的等差数列&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;公比为2的等比数列&#34;</span>
+</span></span><span class=line><span class=cl><span class=p>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>nerveNet</span> <span class=o>=</span> <span class=n>NerveNet</span><span class=p>(</span><span class=n>struct</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>nerveNet</span><span class=o>.</span><span class=n>study</span><span class=p>(</span><span class=n>train</span><span class=p>,</span> <span class=n>desire</span><span class=p>,</span> <span class=n>targets</span><span class=p>,</span> <span class=mf>0.1</span><span class=p>,</span> <span class=mi>2000</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>nerveNet</span><span class=o>.</span><span class=n>work</span><span class=p>(</span><span class=n>test</span><span class=p>,</span> <span class=n>testTargets</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><div class=footnotes role=doc-endnotes><hr><ol><li id=fn:1><p>信息论中的海明距离，用于描述两个等长编码之间不同位的个数，这里可以说海明距离为2。&#160;<a href=#fnref:1 class=footnote-backref role=doc-backlink>&#8617;&#xfe0e;</a></p></li></ol></div></section><footer class=article-footer><section class=article-tags><a href=/tags/%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C/>神经网络</a>
+<a href=/tags/bp%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C/>BP神经网络</a></section><section class=article-copyright><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg>
+<span>Licensed under CC BY-NC-SA 4.0</span></section></footer><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css integrity=sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV crossorigin=anonymous><script src=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js integrity=sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8 crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js integrity=sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05 crossorigin=anonymous defer></script><script>window.addEventListener("DOMContentLoaded",()=>{renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1},{left:"\\[",right:"\\]",display:!0}],ignoredClasses:["gist"]})})</script></article><aside class=related-content--wrapper><h2 class=section-title>相关文章</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/ann-%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E5%9F%BA%E7%A1%80/><div class=article-image><img src=/p/ann-%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E5%9F%BA%E7%A1%80/1.40c554ac95c7f7e9d2269c2a64097616_hu69ae4b20123b44ac4941d164f555be9a_68333_250x150_fill_box_smart1_3.png width=250 height=150 loading=lazy alt="Featured image of post ANN 神经网络基础" data-hash="md5-QMVUrJXH9+nSJpwqZAl2Fg=="></div><div class=article-details><h2 class=article-title>ANN 神经网络基础</h2></div></a></article></div></div></aside><div class=disqus-container><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//CHmadoka.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}()</script><noscript>Please enable JavaScript to view the <a href=https://disqus.com/?ref_noscript>comments powered by Disqus.</a></noscript><a href=https://disqus.com class=dsq-brlink>comments powered by <span class=logo-disqus>Disqus</span></a></div><style>.disqus-container{background-color:var(--card-background);border-radius:var(--card-border-radius);box-shadow:var(--shadow-l1);padding:var(--card-padding)}</style><script>window.addEventListener("onColorSchemeChange",e=>{typeof DISQUS=="object"&&DISQUS.reset({reload:!0})})</script><footer class=site-footer><section class=copyright>&copy;
+2024 CHmadoka 小屋</section><section class=powerby>Special Thanks to Yukari Chan<br>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.25.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>
