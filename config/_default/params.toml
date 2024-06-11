@@ -1,0 +1,174 @@
+# Pages placed under these sections will be shown on homepage and archive page.
+mainSections = ["post"]
+# Output page's full content in RSS.
+rssFullContent = true
+# 标签页图标，图像必须放在static中
+favicon = "/titleImg.png"
+
+
+# 版权信息
+[footer]
+since = 2024
+# 文本
+customText = "Special Thanks to Yukari Chan"
+
+[dateFormat]
+published = "Jan 02, 2006"
+lastUpdated = "Jan 02, 2006 15:04 MST"
+
+[sidebar]
+emoji = "😽"
+subtitle = "呆头呆脑的大聪明。在此分享一些比较个人化的内容。"
+
+[sidebar.avatar]
+# 是否启用头像
+enabled = true
+# 是否是本地图像
+local = true
+# 头像，必须放在assets/img中。
+src = "img/file_259987.jpg"
+
+# 文章全局配置
+[article]
+# 是否启用KaTeX
+math = false
+# 总阅读时长
+readingTime = true
+
+[article.license]
+enabled = true
+default = "Licensed under CC BY-NC-SA 4.0"
+
+## Widgets 右侧小部件的配置
+[[widgets.homepage]]
+# type是部件名称
+type = "search"
+
+# 归档小部件
+[[widgets.homepage]]
+type = "archives"
+
+# 归档栏的数量限制
+[widgets.homepage.params]
+# 
+limit = 5
+
+[[widgets.homepage]]
+type = "categories"
+
+# 右侧分类最大展示数
+[widgets.homepage.params]
+limit = 10
+
+[[widgets.homepage]]
+type = "tag-cloud"
+# 右侧标签数量限制
+[widgets.homepage.params]
+limit = 10
+
+# 显示页面目录的组件
+[[widgets.page]]
+type = "toc"
+
+[opengraph.twitter]
+site = ""
+card = "summary_large_image"
+
+[defaultImage.opengraph]
+enabled = false
+local = false
+src = ""
+
+# 配色方案 light or dark
+[colorScheme]
+# 显示切换按钮
+toggle = true
+# 默认配色 light|dark|auto，auto根据用户系统决定
+default = "auto"
+
+
+# hugo内置的图形处理功能，可以对图像自动缩放调整大小
+[imageProcessing.cover]
+enabled = true
+
+# 对文章中的图像启用处理功能
+[imageProcessing.content]
+enabled = true
+
+## Comments 各评论系统的配置
+[comments]
+# 启用
+enabled = true
+# 评论系统的选择
+provider = "disqus"
+
+# 详细配置
+[comments.disqusjs]
+shortname = ""
+apiUrl = ""
+apiKey = ""
+admin = ""
+adminLabel = ""
+
+[comments.utterances]
+repo = ""
+issueTerm = "pathname"
+label = ""
+
+[comments.remark42]
+host = ""
+site = ""
+locale = ""
+
+[comments.vssue]
+platform = ""
+owner = ""
+repo = ""
+clientId = ""
+clientSecret = ""
+autoCreateIssue = false
+
+[comments.waline]
+serverURL = ""
+lang = ""
+visitor = ""
+avatar = ""
+emoji = ["https://cdn.jsdelivr.net/gh/walinejs/emojis/weibo"]
+requiredMeta = ["name", "email", "url"]
+placeholder = ""
+
+[comments.waline.locale]
+admin = "Admin"
+
+[comments.twikoo]
+envId = ""
+region = ""
+path = ""
+lang = ""
+
+[comments.cactus]
+defaultHomeserverUrl = "https://matrix.cactus.chat:8448"
+serverName = "cactus.chat"
+siteName = ""
+
+[comments.giscus]
+repo = ""
+repoID = ""
+category = ""
+categoryID = ""
+mapping = ""
+lightTheme = ""
+darkTheme = ""
+reactionsEnabled = 1
+emitMetadata = 0
+
+[comments.gitalk]
+owner = "CHmadoka"
+admin = ""
+repo = ""
+clientID = ""
+clientSecret = ""
+
+[comments.cusdis]
+host = ""
+id = ""
