@@ -1,4 +1,22 @@
-# 使用游戏版本：41.78.16
+---
+# 文章标题
+title: Project Zombie源码分析
+# 发布日期
+date: 2024-05-28
+# 文章描述（副标题）
+description: 不过还是很菜什么都写不出来
+
+# 文章底部显示的关于内容的标签
+tags: 
+    - Project Zombie
+# 是否启用对KaTeX的支持，默认为false
+math: false
+    
+# 顶部显示的分类标签
+categories:
+    - 源码分析
+---
+ **使用游戏版本：41.78.16**
 
 ## 游戏目录文件结构
 
